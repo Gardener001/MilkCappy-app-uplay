@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Milk Caps</title>
+<style>
+html, body, #root { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#1a1510; }
+</style>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+var { useState, useEffect, useRef, useCallback } = React;
+
+const CR=24,SR=30,FR=0.93,BO=0.45;
+const RARITY=[{n:"Common",c:"#8899aa",b:"#6a7a8a"},{n:"Uncommon",c:"#4ade80",b:"#2a9d58"},{n:"Rare",c:"#60a5fa",b:"#3878c8"},{n:"Epic",c:"#c084fc",b:"#8a50d0"},{n:"Legendary",c:"#fbbf24",b:"#c89000"}];
+
+const SYM=[
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2-Math.PI/2,b2=((i+.5)/5)*Math.PI*2-Math.PI/2;c.lineTo(x+Math.cos(a)*r*.85,y+Math.sin(a)*r*.85);c.lineTo(x+Math.cos(b2)*r*.4,y+Math.sin(b2)*r*.4);}c.closePath();c.fill();},
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.arc(x-r*.1,y,r*.6,0,Math.PI*2);c.fill();c.fillStyle=c._bg||"#333";c.beginPath();c.arc(x+r*.2,y-r*.1,r*.45,0,Math.PI*2);c.fill();},
+  (c,x,y,r,f)=>{c.strokeStyle=f;c.lineWidth=3;c.lineCap="round";for(let w=0;w<3;w++){c.beginPath();for(let xx=-r*.7;xx<=r*.7;xx+=1)c.lineTo(x+xx,y-r*.3+w*r*.3+Math.sin(xx*.08)*r*.15);c.stroke();}},
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.moveTo(x,y-r*.7);c.bezierCurveTo(x+r*.4,y-r*.3,x+r*.35,y+r*.2,x,y+r*.6);c.bezierCurveTo(x-r*.35,y+r*.2,x-r*.4,y-r*.3,x,y-r*.7);c.fill();},
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.moveTo(x,y+r*.5);c.bezierCurveTo(x-r*.8,y-r*.1,x-r*.5,y-r*.7,x,y-r*.3);c.bezierCurveTo(x+r*.5,y-r*.7,x+r*.8,y-r*.1,x,y+r*.5);c.fill();},
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.moveTo(x-r*.5,y+r*.3);c.lineTo(x-r*.5,y-r*.1);c.lineTo(x-r*.25,y+r*.1);c.lineTo(x,y-r*.4);c.lineTo(x+r*.25,y+r*.1);c.lineTo(x+r*.5,y-r*.1);c.lineTo(x+r*.5,y+r*.3);c.closePath();c.fill();},
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.moveTo(x,y-r*.6);c.lineTo(x+r*.45,y);c.lineTo(x,y+r*.6);c.lineTo(x-r*.45,y);c.closePath();c.fill();},
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.arc(x,y,r*.3,0,Math.PI*2);c.fill();c.strokeStyle=f;c.lineWidth=2.5;for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2;c.beginPath();c.moveTo(x+Math.cos(a)*r*.4,y+Math.sin(a)*r*.4);c.lineTo(x+Math.cos(a)*r*.65,y+Math.sin(a)*r*.65);c.stroke();}},
+  (c,x,y,r,f)=>{c.strokeStyle=f;c.lineWidth=2.5;c.lineCap="round";c.beginPath();for(let a=0;a<Math.PI*6;a+=.1){const s=(a/(Math.PI*6))*r*.6;c.lineTo(x+Math.cos(a)*s,y+Math.sin(a)*s);}c.stroke();},
+  // 67 special
+  (c,x,y,r,f)=>{c.fillStyle=f;c.font=`bold ${r*.8}px 'DM Sans',sans-serif`;c.textAlign="center";c.textBaseline="middle";c.fillText("67",x,y);},
+  // Paw print
+  (c,x,y,r,f)=>{c.fillStyle=f;const s=r*.15;c.beginPath();c.arc(x,y+r*.15,r*.25,0,Math.PI*2);c.fill();c.beginPath();c.arc(x-r*.25,y-r*.2,s,0,Math.PI*2);c.fill();c.beginPath();c.arc(x+r*.25,y-r*.2,s,0,Math.PI*2);c.fill();c.beginPath();c.arc(x-r*.4,y+r*.05,s*.8,0,Math.PI*2);c.fill();c.beginPath();c.arc(x+r*.4,y+r*.05,s*.8,0,Math.PI*2);c.fill();},
+  // Bear face
+  (c,x,y,r,f)=>{c.fillStyle=f;c.beginPath();c.arc(x,y,r*.5,0,Math.PI*2);c.fill();c.beginPath();c.arc(x-r*.35,y-r*.35,r*.18,0,Math.PI*2);c.fill();c.beginPath();c.arc(x+r*.35,y-r*.35,r*.18,0,Math.PI*2);c.fill();c.fillStyle=c._bg||"#333";c.beginPath();c.arc(x-r*.15,y-r*.1,r*.06,0,Math.PI*2);c.arc(x+r*.15,y-r*.1,r*.06,0,Math.PI*2);c.fill();c.beginPath();c.arc(x,y+r*.08,r*.08,0,Math.PI*2);c.fill();},
+];
+
+const CCOL=[{bg:"#dc2626",fg:"#fff"},{bg:"#2563eb",fg:"#fff"},{bg:"#16a34a",fg:"#fff"},{bg:"#9333ea",fg:"#fff"},{bg:"#ea580c",fg:"#fff"},{bg:"#0d9488",fg:"#fff"},{bg:"#db2777",fg:"#fff"},{bg:"#111827",fg:"#f5e6c8"},{bg:"#7c3aed",fg:"#fbbf24"},{bg:"#1e40af",fg:"#fbbf24"},{bg:"#064e3b",fg:"#34d399"},{bg:"#581c87",fg:"#e879f9"}];
+
+function rng(s){let x=Math.abs(s)||1;return()=>{x=(x*16807)%2147483647;return x/2147483647};}
+function gd(seed){const r=rng(seed);const ri=r()<.02?4:r()<.08?3:r()<.2?2:r()<.45?1:0;const c=CCOL[Math.floor(r()*CCOL.length)];
+  // 67 easter egg — ~5% chance
+  const sym=r()<.05?9:Math.floor(r()*(SYM.length));
+  return{rarity:RARITY[ri],bg:c.bg,fg:c.fg,sym,seed};}
+
+function dc(ctx,d,sz,fu){
+  const cx=sz/2,cy=sz/2,rd=sz/2-2;ctx.save();ctx.beginPath();ctx.arc(cx,cy,rd,0,Math.PI*2);ctx.clip();
+  if(!fu){ctx.fillStyle="#d8d0c4";ctx.fillRect(0,0,sz,sz);ctx.strokeStyle="#c4baa8";ctx.lineWidth=.4;for(let i=-sz;i<sz*2;i+=6){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+sz,sz);ctx.stroke();ctx.beginPath();ctx.moveTo(i,sz);ctx.lineTo(i+sz,0);ctx.stroke();}ctx.beginPath();ctx.arc(cx,cy,rd*.35,0,Math.PI*2);ctx.strokeStyle="#b8ae9c";ctx.lineWidth=1.5;ctx.stroke();ctx.restore();ctx.beginPath();ctx.arc(cx,cy,rd,0,Math.PI*2);ctx.strokeStyle="#b0a898";ctx.lineWidth=2.5;ctx.stroke();return;}
+  ctx.fillStyle=d.bg;ctx.fillRect(0,0,sz,sz);ctx._bg=d.bg;ctx.beginPath();ctx.arc(cx,cy,rd-3,0,Math.PI*2);ctx.strokeStyle=d.fg;ctx.lineWidth=2;ctx.globalAlpha=.3;ctx.stroke();ctx.globalAlpha=1;SYM[d.sym](ctx,cx,cy,rd,d.fg);
+  if(d.rarity.n!=="Common"){ctx.beginPath();ctx.arc(cx,cy,rd-1,0,Math.PI*2);ctx.strokeStyle=d.rarity.c;ctx.lineWidth=d.rarity.n==="Legendary"?3.5:2.5;ctx.globalAlpha=.8;ctx.stroke();ctx.globalAlpha=1;}
+  ctx.restore();ctx.beginPath();ctx.arc(cx,cy,rd,0,Math.PI*2);ctx.strokeStyle=d.rarity.n!=="Common"?d.rarity.b:"#444";ctx.lineWidth=2.5;ctx.stroke();}
+
+const SLAMS=[
+  {id:"classic",name:"Classic",desc:"The original",rad:1,flip:0,cost:0},
+  {id:"heavy",name:"Heavy Hitter",desc:"Bigger blast radius",rad:1.25,flip:-.05,cost:5},
+  {id:"precision",name:"Precision",desc:"Tiny but deadly accurate",rad:.7,flip:.15,cost:8},
+  {id:"softball",name:"⚾ Softball",desc:"Curve ball power!",rad:1.1,flip:.05,cost:10},
+  {id:"football",name:"🏈 Football",desc:"Spiral slam!",rad:.9,flip:.1,cost:12},
+  {id:"diamond",name:"💎 Diamond",desc:"Sparkle slam!",rad:.85,flip:.12,cost:15},
+  {id:"ruby",name:"🔴 Ruby",desc:"Legendary power!",rad:1.15,flip:.1,cost:20},
+  {id:"skull",name:"💀 Skull Crusher",desc:"Fear the skull!",rad:1.0,flip:.08,cost:18},
+];
+
+function makeF(t,n,cx,cy,W){
+  const maxX=W?W/2-CR-12:160;
+  const clamp=(pts)=>pts.map(p=>({x:Math.max(CR+8,Math.min((W||360)-CR-8,p.x)),y:Math.max(CR+8,Math.min(400,p.y))}));
+  switch(t){
+    case"line":{const sp=Math.min(50,maxX*2/(n-1));return clamp(Array.from({length:n},(_,i)=>({x:cx-(n-1)*sp/2+i*sp,y:cy})));}
+    case"circle":{const r=Math.min(55+n*4,maxX-10);return clamp(Array.from({length:n},(_,i)=>({x:cx+Math.cos((i/n)*Math.PI*2-Math.PI/2)*r,y:cy+Math.sin((i/n)*Math.PI*2-Math.PI/2)*r})));}
+    case"cluster":{const p=[{x:cx,y:cy}];for(let i=1;i<n;i++){const a=((i-1)/(n-1))*Math.PI*2;p.push({x:cx+Math.cos(a)*44,y:cy+Math.sin(a)*44});}return clamp(p);}
+    case"diamond":{const r=Math.min(55,maxX-10);return clamp(Array.from({length:n},(_,i)=>({x:cx+Math.cos((i/n)*Math.PI*2)*r,y:cy+Math.sin((i/n)*Math.PI*2)*r*.75})));}
+    case"v":{const sp=Math.min(30,(maxX*2)/(n));return clamp(Array.from({length:n},(_,i)=>{const h=Math.floor(n/2);return i<h?{x:cx-h*sp/2+i*sp,y:cy-35+i*28}:{x:cx-(n-h)*sp/2+(i-h)*sp,y:cy+15-(i-h)*28};}));}
+    case"scatter":{const s=rng(Date.now());return clamp(Array.from({length:n},()=>({x:cx+(s()-.5)*maxX*1.8,y:cy+(s()-.5)*160})));}
+    case"grid":{const c=Math.ceil(Math.sqrt(n));const sp=Math.min(50,(maxX*2)/(c));return clamp(Array.from({length:n},(_,i)=>({x:cx-(c-1)*sp/2+(i%c)*sp,y:cy-(Math.ceil(n/c)-1)*sp/2+Math.floor(i/c)*sp})));}
+    case"walls":{const h1=Math.ceil(n/2),h2=Math.floor(n/2);const gap=Math.min(75,maxX-20);return clamp([...Array.from({length:h1},(_,i)=>({x:cx-gap,y:cy-50+i*(100/(h1-1||1))})),...Array.from({length:h2},(_,i)=>({x:cx+gap,y:cy-50+i*(100/(h2-1||1))}))]);}
+    case"cross":{const p=[{x:cx,y:cy}];const d=Math.min(46,maxX/2.5);[[-1,0],[1,0],[0,-1],[0,1]].forEach(([dx,dy])=>{for(let s=1;p.length<n;s++)p.push({x:cx+dx*d*s,y:cy+dy*d*s});});return clamp(p.slice(0,n));}
+    case"zigzag":{const sp=Math.min(48,(maxX*2)/(n));return clamp(Array.from({length:n},(_,i)=>({x:cx-(n-1)*sp/2+i*sp,y:cy+(i%2?-30:30)})));}
+    case"ring2":{const r1=30,r2=Math.min(65,maxX-10);const inner=Math.min(3,n-4);const outer=n-inner;return clamp([...Array.from({length:inner},(_,i)=>({x:cx+Math.cos((i/inner)*Math.PI*2)*r1,y:cy+Math.sin((i/inner)*Math.PI*2)*r1})),...Array.from({length:outer},(_,i)=>({x:cx+Math.cos((i/outer)*Math.PI*2)*r2,y:cy+Math.sin((i/outer)*Math.PI*2)*r2}))]);}
+    case"arrow":{const pts=[];const sp=Math.min(40,maxX/3);pts.push({x:cx,y:cy-60});pts.push({x:cx-sp,y:cy-20});pts.push({x:cx+sp,y:cy-20});for(let i=0;i<n-3;i++)pts.push({x:cx,y:cy+i*35});return clamp(pts.slice(0,n));}
+    default:return clamp(Array.from({length:n},(_,i)=>({x:cx-(n-1)*22+i*44,y:cy})));}
+}
+
+function slamP(caps,sx,sy,force,sl){const rm=sl?.rad||1,fb=sl?.flip||0;return caps.map(c=>{if(c.done)return c;const dx=c.x-sx,dy=c.y-sy,dist=Math.sqrt(dx*dx+dy*dy),mx=(SR+CR+35)*rm;if(dist>mx)return{...c};const cl=1-dist/mx;const f=force*cl*(.55+Math.random()*.5);const a=Math.atan2(dy,dx)+(Math.random()-.5)*.5;const flip=f>3?Math.random()<(.2+cl*.6+fb):false;return{...c,vx:c.vx+Math.cos(a)*f,vy:c.vy+Math.sin(a)*f,vr:c.vr+(Math.random()-.5)*f*12,fu:flip?!c.fu:c.fu,set:false};});}
+
+function stepP(caps,W,H){let n=caps.map(c=>{if(c.set||c.done)return c;let{x,y,vx,vy,vr,rot}=c;x+=vx;y+=vy;rot+=vr;vx*=FR;vy*=FR;vr*=.92;if(x-CR<8){x=8+CR;vx=Math.abs(vx)*BO;}if(x+CR>W-8){x=W-8-CR;vx=-Math.abs(vx)*BO;}if(y-CR<8){y=8+CR;vy=Math.abs(vy)*BO;}if(y+CR>H-8){y=H-8-CR;vy=-Math.abs(vy)*BO;}return{...c,x,y,vx,vy,vr,rot,set:Math.sqrt(vx*vx+vy*vy)<.25&&Math.abs(vr)<.4};});
+  for(let i=0;i<n.length;i++)for(let j=i+1;j<n.length;j++){const a=n[i],b=n[j];if(a.done||b.done)continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy);if(d<CR*2&&d>0){const o=CR*2-d,nx=dx/d,ny=dy/d;n[i]={...n[i],x:a.x-nx*o*.5,y:a.y-ny*o*.5};n[j]={...n[j],x:b.x+nx*o*.5,y:b.y+ny*o*.5};const rv=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;if(rv>0){n[i]={...n[i],vx:a.vx-rv*nx*.5,vy:a.vy-rv*ny*.5};n[j]={...n[j],vx:b.vx+rv*nx*.5,vy:b.vy+rv*ny*.5};}}}return n;}
+
+const ERAS=[
+  {name:"The Backyard",emoji:"🏡",color:"#4ade80",gate:0,
+   boss:{name:"Grammy",emoji:"👵",taunt:"Come here, sweetpea!",lose:"Better luck next time, baby!",win:"Oh my! You beat Grammy!"},
+   levels:[
+     {name:"First Slam",desc:"Flip 2 caps",n:4,target:2,slams:3,stars:[2,3,4],form:"line"},
+     {name:"Porch Caps",desc:"Small circle",n:5,target:3,slams:3,stars:[3,4,5],form:"circle"},
+     {name:"Garden Path",desc:"Zigzag line",n:5,target:3,slams:3,stars:[3,4,5],form:"zigzag"},
+     {name:"Backyard Pile",desc:"Tight cluster",n:6,target:4,slams:3,stars:[4,5,6],form:"cluster"},
+     {name:"Grammy's Kitchen",desc:"Beat Grammy!",n:7,target:5,slams:3,stars:[5,6,7],form:"diamond",boss:true},
+   ]},
+  {name:"The Schoolyard",emoji:"🎒",color:"#60a5fa",gate:6,
+   boss:{name:"Momma Bear",emoji:"🐻",taunt:"Momma doesn't lose!",lose:"Nice try, cub!",win:"My little champ! 🏆"},
+   levels:[
+     {name:"Lunch Table",desc:"Long line",n:6,target:3,slams:3,stars:[3,5,6],form:"line"},
+     {name:"Recess Rush",desc:"Scattered!",n:7,target:4,slams:3,stars:[4,5,7],form:"scatter"},
+     {name:"Hallway",desc:"Double walls",n:6,target:4,slams:3,stars:[4,5,6],form:"walls"},
+     {name:"Yaya's Trick",desc:"Ring within ring",n:8,target:5,slams:3,stars:[5,6,8],form:"ring2",mini:"Yaya 🧶"},
+     {name:"Momma Bear's Den",desc:"Beat Momma Bear!",n:8,target:6,slams:3,stars:[6,7,8],form:"diamond",boss:true},
+   ]},
+  {name:"The Championship",emoji:"🏆",color:"#fbbf24",gate:14,
+   boss:{name:"Big Dog",emoji:"🐕",taunt:"WOOF! Let's GO!",lose:"Ruff day for you!",win:"No way... the Big Dog lost?!"},
+   levels:[
+     {name:"Qualifier",desc:"V formation",n:7,target:4,slams:3,stars:[4,6,7],form:"v"},
+     {name:"Poppop's Corner",desc:"Grid slam",n:7,target:5,slams:3,stars:[5,6,7],form:"grid",mini:"Poppop 👴"},
+     {name:"Arrow Shot",desc:"Arrow formation",n:8,target:5,slams:3,stars:[5,7,8],form:"arrow"},
+     {name:"Speed Slam",desc:"Only 2 slams!",n:7,target:5,slams:2,stars:[5,6,7],form:"cluster"},
+     {name:"Big Dog's Park",desc:"Beat Big Dog!",n:9,target:6,slams:3,stars:[6,8,9],form:"circle",boss:true},
+   ]},
+  {name:"The Legends",emoji:"⚡",color:"#c084fc",gate:22,
+   boss:{name:"Poppa Bear",emoji:"🧸",taunt:"Papa's not going easy!",lose:"Almost had me, kiddo!",win:"That's my champion! 🌟"},
+   levels:[
+     {name:"Livy's Loop",desc:"Big circle",n:8,target:5,slams:3,stars:[5,6,8],form:"circle",mini:"Livy 🌸"},
+     {name:"Double Ring",desc:"Rings within rings",n:9,target:6,slams:3,stars:[6,7,9],form:"ring2"},
+     {name:"Poppy Cat's Pounce",desc:"Scatter chaos!",n:9,target:6,slams:3,stars:[6,7,9],form:"scatter",mini:"Poppy Cat 🐱"},
+     {name:"Patty Cat's Grid",desc:"2 slams only!",n:8,target:6,slams:2,stars:[6,7,8],form:"grid",mini:"Patty Cat 🐈"},
+     {name:"Poppa Bear's Den",desc:"Beat Poppa Bear!",n:10,target:7,slams:3,stars:[7,9,10],form:"ring2",boss:true},
+   ]},
+  {name:"The Finals",emoji:"👑",color:"#ff4444",gate:32,
+   boss:{name:"Big Back M",emoji:"💪",taunt:"You made it HERE?! 😤",lose:"Not even close! 💪",win:"IMPOSSIBLE! You're the GOAT! 🐐"},
+   levels:[
+     {name:"Gauntlet",desc:"Zigzag madness",n:9,target:6,slams:3,stars:[6,8,9],form:"zigzag"},
+     {name:"The Cage",desc:"Double walls",n:10,target:7,slams:3,stars:[7,8,10],form:"walls"},
+     {name:"Arrow Storm",desc:"2 slams!",n:8,target:6,slams:2,stars:[6,7,8],form:"arrow"},
+     {name:"The Crucible",desc:"Scattered 2 slams!",n:9,target:7,slams:2,stars:[7,8,9],form:"scatter"},
+     {name:"Big Back M's Arena",desc:"THE FINAL BOSS!",n:10,target:8,slams:3,stars:[8,9,10],form:"ring2",boss:true},
+   ]},
+];
+
+function App(){
+  const tRef=useRef(null);const[dims,sD]=useState({w:370,h:420});const[caps,sC]=useState([]);const[sp,sSP]=useState({x:185,y:370});
+  const[drag,sDr]=useState(false);const[slamA,sSA]=useState(false);const[shk,sSh]=useState(false);const[impact,sImp]=useState(null);
+  const[floats,sF]=useState([]);const[parts,sPt]=useState([]);const[flash,sFl]=useState(null);const fid=useRef(0);
+  const[mode,sM]=useState("tutorial");const[tutS,sTS]=useState(0);const[ei,sEI]=useState(0);const[li,sLI]=useState(0);
+  const[stars,sSt]=useState(()=>{try{const s=localStorage.getItem("mc_stars");return s?JSON.parse(s):{}}catch(e){return{}}});
+  const[sLeft,sSL]=useState(3);
+  const[col,sCol]=useState(()=>{try{const s=localStorage.getItem("mc_col");return s?JSON.parse(s):[]}catch(e){return[]}});
+  const[cSlam,sCS]=useState(()=>{try{const id=localStorage.getItem("mc_slam");return SLAMS.find(s=>s.id===id)||SLAMS[0]}catch(e){return SLAMS[0]}});
+  const[owned,sOwn]=useState(()=>{try{const s=localStorage.getItem("mc_owned");return s?JSON.parse(s):["classic"]}catch(e){return["classic"]}});
+  const[showShop,sSS]=useState(false);
+  const[bossR,sBR]=useState(null);const[bloom,sBl]=useState(0);
+  const aRef=useRef(null);const drRef=useRef(false);const doRef=useRef(null);const spRef=useRef(sp);spRef.current=sp;
+
+  useEffect(()=>{try{localStorage.setItem("mc_stars",JSON.stringify(stars))}catch(e){}},[stars]);
+  useEffect(()=>{try{localStorage.setItem("mc_col",JSON.stringify(col.slice(-200)))}catch(e){}},[col]);
+  useEffect(()=>{try{localStorage.setItem("mc_owned",JSON.stringify(owned))}catch(e){}},[owned]);
+  useEffect(()=>{try{localStorage.setItem("mc_slam",cSlam.id)}catch(e){}},[cSlam]);
+  useEffect(()=>{const u=()=>{sD({w:Math.min(window.innerWidth-12,400),h:Math.min(window.innerHeight-170,440)});};u();window.addEventListener("resize",u);return()=>window.removeEventListener("resize",u);},[]);
+  useEffect(()=>{let r=true;const l=()=>{if(!r)return;sC(p=>stepP(p,dims.w,dims.h));aRef.current=requestAnimationFrame(l);};aRef.current=requestAnimationFrame(l);return()=>{r=false;cancelAnimationFrame(aRef.current);};},[dims]);
+  useEffect(()=>{if(!parts.length)return;const iv=setInterval(()=>{sPt(p=>p.map(pp=>({...pp,x:pp.x+pp.vx,y:pp.y+pp.vy,vy:pp.vy+.15,life:pp.life-.03})).filter(pp=>pp.life>0));},16);return()=>clearInterval(iv);},[parts.length]);
+
+  const era=ERAS[ei];const lv=era?.levels[li];const fl=caps.filter(c=>c.fu).length;const allS=caps.length>0&&caps.every(c=>c.set||c.done);const ts=Object.values(stars).reduce((a,b)=>a+b,0);
+  const isUL=(e,l)=>{if(ts<ERAS[e].gate)return false;if(e===0&&l===0)return true;if(l>0)return(stars[e+"-"+(l-1)]||0)>=1;if(e>0)return(stars[(e-1)+"-"+(ERAS[e-1].levels.length-1)]||0)>=1;return false;};
+
+  const spawnP=(x,y,count,color)=>{const ps=Array.from({length:count},()=>{const a=Math.random()*Math.PI*2,v=2+Math.random()*6;return{id:++fid.current,x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,life:1,color,size:3+Math.random()*4};});sPt(p=>[...p,...ps]);};
+
+  const setupTut=useCallback(s=>{const cx=dims.w/2,cy=dims.h/2-30;
+    if(s===0){sC([{id:"t0",x:cx,y:cy,vx:0,vy:0,rot:0,vr:0,fu:false,design:gd(42),set:true,done:false}]);sSL(1);}
+    else if(s===1){sC([0,1,2].map(i=>({id:"t"+i,x:cx-50+i*50,y:cy,vx:0,vy:0,rot:i*15-15,vr:0,fu:false,design:gd(100+i),set:true,done:false})));sSL(2);}
+    else{const p=makeF("circle",5,cx,cy,dims.w);sC(p.map((pp,i)=>({id:"t"+(10+i),x:pp.x,y:pp.y,vx:0,vy:0,rot:Math.random()*360,vr:0,fu:false,design:gd(200+i),set:true,done:false})));sSL(3);}
+    sSP({x:dims.w/2,y:dims.h-55});sBl(0);},[dims]);
+  useEffect(()=>{if(mode==="tutorial")setupTut(tutS);},[mode,tutS,setupTut]);
+
+  const startLv=useCallback(()=>{const cx=dims.w/2,cy=dims.h/2-(lv.boss?5:20);const pos=makeF(lv.form,lv.n,cx,cy,dims.w);
+    sC(pos.map((p,i)=>({id:"c"+i,x:p.x,y:p.y,vx:0,vy:0,rot:Math.random()*360,vr:0,fu:false,design:gd(ei*500+li*50+i+1),set:true,done:false})));
+    sSL(lv.slams);sSP({x:dims.w/2,y:dims.h-55});sBR(null);sBl(0);sM("play");},[lv,dims,ei,li]);
+
+  useEffect(()=>{if((mode!=="play"&&mode!=="tutorial")||!allS||sLeft>0)return;
+    const t=setTimeout(()=>{if(mode==="tutorial"){if(tutS<2)sTS(p=>p+1);else sM("map");}else sM("result");},700);return()=>clearTimeout(t);},[mode,allS,sLeft,tutS]);
+
+  useEffect(()=>{const el=tRef.current;if(!el)return;
+    const gXY=e=>{const r=el.getBoundingClientRect();const t=e.touches?e.touches[0]:e;if(!t)return spRef.current;return{x:t.clientX-r.left,y:t.clientY-r.top};};
+    const onS=e=>{e.preventDefault();if((mode!=="play"&&mode!=="tutorial")||sLeft<=0)return;const p=gXY(e),s=spRef.current;
+      if(Math.sqrt((p.x-s.x)**2+(p.y-s.y)**2)<SR+20){sDr(true);drRef.current=true;doRef.current={...s,time:Date.now()};}
+      else if(p.y<dims.h*.78){sSP(p);spRef.current=p;doSlam(p.x,p.y,9+Math.random()*4);}};
+    const onM=e=>{e.preventDefault();if(!drRef.current)return;const p=gXY(e);const c={x:Math.max(SR,Math.min(dims.w-SR,p.x)),y:Math.max(SR,Math.min(dims.h-SR,p.y))};sSP(c);spRef.current=c;};
+    const onE=e=>{e.preventDefault();if(!drRef.current)return;const o=doRef.current,c=spRef.current;
+      if(o){const dt=Math.max(1,Date.now()-o.time);const d=Math.sqrt((c.x-o.x)**2+(c.y-o.y)**2);const f=Math.min((d/dt)*35,18);if(f>1.5)doSlam(c.x,c.y,Math.max(f,6));}
+      sDr(false);drRef.current=false;doRef.current=null;};
+    el.addEventListener("touchstart",onS,{passive:false});el.addEventListener("touchmove",onM,{passive:false});el.addEventListener("touchend",onE,{passive:false});
+    el.addEventListener("mousedown",onS);el.addEventListener("mousemove",onM);el.addEventListener("mouseup",onE);el.addEventListener("mouseleave",onE);
+    return()=>{el.removeEventListener("touchstart",onS);el.removeEventListener("touchmove",onM);el.removeEventListener("touchend",onE);el.removeEventListener("mousedown",onS);el.removeEventListener("mousemove",onM);el.removeEventListener("mouseup",onE);el.removeEventListener("mouseleave",onE);};},[dims,mode,sLeft]);
+
+  const doSlam=useCallback((x,y,f)=>{
+    if(sLeft<=0)return;sSA(true);sSh(true);sImp({x,y});
+    setTimeout(()=>sSh(false),200);setTimeout(()=>sSA(false),120);setTimeout(()=>sImp(null),400);
+    sC(prev=>{const next=slamP(prev,x,y,f,cSlam);const nf=next.filter((c,i)=>c.fu&&!prev[i].fu);
+      const totalNow=next.filter(c=>c.fu).length;sBl(lv?totalNow/lv.n:0);
+      const fts=nf.map(c=>({id:++fid.current,x:c.x,y:c.y-24,text:"FLIP!",color:"#fbbf24"}));
+      if(nf.length>=4){fts.push({id:++fid.current,x:dims.w/2,y:35,text:"🔥 LEGENDARY 🔥",color:"#fbbf24",big:true});spawnP(x,y,30,"#fbbf24");spawnP(x,y,20,"#ff6b6b");spawnP(x,y,15,"#c084fc");sFl("#fbbf24");setTimeout(()=>sFl(null),300);sBR("shocked");}
+      else if(nf.length===3){fts.push({id:++fid.current,x:dims.w/2,y:35,text:"✨ INCREDIBLE ✨",color:"#c084fc",big:true});spawnP(x,y,20,"#c084fc");spawnP(x,y,12,"#fbbf24");sFl("#c084fc");setTimeout(()=>sFl(null),200);sBR("worried");}
+      else if(nf.length===2){fts.push({id:++fid.current,x:dims.w/2,y:40,text:"DOUBLE!",color:"#4ade80"});spawnP(x,y,10,"#4ade80");sBR("flinch");}
+      else if(nf.length===0)sBR("smirk");else sBR("flinch");
+      if(fts.length){sF(p=>[...p,...fts]);setTimeout(()=>sF(p=>p.filter(ff=>!fts.find(n=>n.id===ff.id))),1200);}
+      setTimeout(()=>sBR(null),1500);return next;});
+    sSL(p=>p-1);if(navigator.vibrate)navigator.vibrate([30,20,50]);},[sLeft,dims,cSlam,lv]);
+
+  const finLv=useCallback(()=>{const e=fl>=lv.stars[2]?3:fl>=lv.stars[1]?2:fl>=lv.stars[0]?1:0;const p=stars[ei+"-"+li]||0;if(e>p)sSt(s=>({...s,[ei+"-"+li]:e}));
+    sCol(pp=>[...pp,...caps.filter(c=>c.fu).map(c=>({id:"w"+Date.now()+Math.random(),design:c.design}))]);sM("map");},[fl,lv,stars,ei,li,caps]);
+  const buyS=useCallback(s=>{if(owned.includes(s.id)||ts<s.cost)return;sOwn(p=>[...p,s.id]);sCS(s);},[owned,ts]);
+
+  const capImgs=useRef({});
+  useEffect(()=>{caps.forEach(cap=>{const k=cap.id+"_"+(cap.fu?"f":"b");if(capImgs.current[k])return;const sz=CR*2+4;const c=document.createElement("canvas");c.width=sz;c.height=sz;dc(c.getContext("2d"),cap.design,sz,cap.fu);capImgs.current[k]=c.toDataURL();});},[caps]);
+
+  const SS=n=>"★".repeat(n)+"☆".repeat(3-n);
+  const tutM=["Tap near the cap or drag the slammer!","Nice! Flip multiple at once!","Clear the ring!"];
+  const boss=era?.boss;const isBoss=lv?.boss;
+
+  const scBg=i=>[
+    {background:"linear-gradient(180deg,#87CEEB 0%,#a8d8a8 40%,#7ab648 55%,#5a3d1a 58%,#4a3015 100%)"},
+    {background:"linear-gradient(180deg,#a8d8f0 0%,#f0e0c0 30%,#e0c8a0 50%,#c8a888 55%,#5a4030 100%)"},
+    {background:"linear-gradient(180deg,#f5e6c8 0%,#e8d8b8 30%,#d4c4a4 50%,#4a3828 55%,#3a2818 100%)"},
+    {background:"linear-gradient(180deg,#1a1030 0%,#2a1848 30%,#3a2060 50%,#2a2a2a 55%,#1a1a1a 100%)"},
+    {background:"linear-gradient(180deg,#1a0000 0%,#3a0a0a 25%,#4a1515 45%,#2a2020 55%,#1a1010 100%)"},
+  ][i]||{background:"#1a1510"};
+  const tbBg=i=>[
+    {bg:"linear-gradient(180deg,#8B7014 0%,#7a5a10 40%,#654a0c 80%,#4a3508 100%)",bd:"#3a2808"},
+    {bg:"linear-gradient(180deg,#c8a878 0%,#b89868 40%,#a08858 80%,#887848 100%)",bd:"#685830"},
+    {bg:"linear-gradient(180deg,#d0b898 0%,#c0a888 40%,#a89878 80%,#908068 100%)",bd:"#706050"},
+    {bg:"linear-gradient(180deg,#2a2a30 0%,#222228 40%,#1a1a20 80%,#141418 100%)",bd:"#444"},
+    {bg:"linear-gradient(180deg,#3a2020 0%,#301818 40%,#281010 80%,#200808 100%)",bd:"#551515"},
+  ][i]||{bg:"#5a3d1a",bd:"#3a2808"};
+  const tbDeco=i=>[
+    ()=><>{[[8,12,"🌺",28],[null,null,"🌴",28,8,null,true],[null,null,"🐚",20,null,8,true]].map(([t,l,e,s,_,b,r],j)=><div key={j} style={{position:"absolute",top:t!=null?t:undefined,left:r?undefined:l,right:r?12:undefined,bottom:b!=null?b:undefined,fontSize:s,opacity:.15,pointerEvents:"none"}}>{e}</div>)}</>,
+    ()=><>{[["🎒",8,12],["📚",8,null,12],["🍎",null,12,null,8]].map(([e,t,l,r,b],j)=><div key={j} style={{position:"absolute",top:t!=null?t:undefined,left:l!=null?l:undefined,right:r!=null?r:undefined,bottom:b!=null?b:undefined,fontSize:22,opacity:.12,pointerEvents:"none"}}>{e}</div>)}</>,
+    ()=><>{[["🏆",8,12],["🥇",8,null,12],["🎯",null,12,null,8]].map(([e,t,l,r,b],j)=><div key={j} style={{position:"absolute",top:t!=null?t:undefined,left:l!=null?l:undefined,right:r!=null?r:undefined,bottom:b!=null?b:undefined,fontSize:22,opacity:.12,pointerEvents:"none"}}>{e}</div>)}</>,
+    ()=><>{[["⚡",8,12],["🌟",8,null,12],["✨",null,12,null,8],["💫",null,null,12,8]].map(([e,t,l,r,b],j)=><div key={j} style={{position:"absolute",top:t!=null?t:undefined,left:l!=null?l:undefined,right:r!=null?r:undefined,bottom:b!=null?b:undefined,fontSize:22,opacity:.15,pointerEvents:"none"}}>{e}</div>)}</>,
+    ()=><>{[["👑",8,12],["💀",8,null,12],["🔥",null,12,null,8],["💪",null,null,12,8]].map(([e,t,l,r,b],j)=><div key={j} style={{position:"absolute",top:t!=null?t:undefined,left:l!=null?l:undefined,right:r!=null?r:undefined,bottom:b!=null?b:undefined,fontSize:22,opacity:.15,pointerEvents:"none"}}>{e}</div>)}</>,
+  ][i];
+
+  return(
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",...((mode==="play"||mode==="tutorial")?scBg(ei):{background:"linear-gradient(180deg,#1a1510,#211c14)"}),fontFamily:"'DM Sans',-apple-system,sans-serif",overflow:"hidden",userSelect:"none",WebkitUserSelect:"none",position:"relative"}}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+      <style>{`*{-webkit-tap-highlight-color:transparent;box-sizing:border-box;margin:0}button{font-family:inherit}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,3px)}40%{transform:translate(4px,-4px)}60%{transform:translate(-3px,2px)}80%{transform:translate(2px,-1px)}}
+@keyframes scoreFloat{0%{transform:translateX(-50%) translateY(0) scale(1);opacity:1}60%{opacity:1}100%{transform:translateX(-50%) translateY(-60px) scale(.8);opacity:0}}
+@keyframes bigFloat{0%{transform:translateX(-50%) translateY(0) scale(.5);opacity:0}15%{transform:translateX(-50%) translateY(-10px) scale(1.3);opacity:1}30%{transform:translateX(-50%) translateY(-15px) scale(1);opacity:1}100%{transform:translateX(-50%) translateY(-80px) scale(.7);opacity:0}}
+@keyframes slamBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes impactRing{0%{transform:scale(.2);opacity:.9;border-width:4px}100%{transform:scale(3);opacity:0;border-width:1px}}
+@keyframes screenFlash{0%{opacity:.4}100%{opacity:0}}
+@keyframes bossFlinch{0%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}100%{transform:translateX(0)}}
+@keyframes bossSmirk{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes bossShocked{0%{transform:scale(1) translateY(0)}50%{transform:scale(1.3) translateY(-8px)}100%{transform:scale(1) translateY(0)}}
+@keyframes popIn{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes bloomGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}`}</style>
+
+      {flash&&<div style={{position:"fixed",inset:0,background:flash,animation:"screenFlash .3s ease-out forwards",pointerEvents:"none",zIndex:200}}/>}
+
+      {mode==="tutorial"&&(<><div style={{width:"100%",maxWidth:dims.w+8,padding:"10px 14px",textAlign:"center",background:"rgba(30,25,20,.9)",zIndex:10}}><div style={{fontSize:20,fontWeight:900,color:"#f5e6c8"}}>How to Play</div><div style={{fontSize:12,color:"#a09888",marginTop:4,fontWeight:600}}>{tutM[tutS]}</div></div>{renderTable(0)}</>)}
+
+      {mode==="map"&&!showShop&&(
+        <div style={{flex:1,width:"100%",maxWidth:400,overflowY:"auto",padding:"14px 12px",WebkitOverflowScrolling:"touch"}}>
+          <div style={{textAlign:"center",marginBottom:10}}><div style={{fontSize:30,fontWeight:900,color:"#f5e6c8"}}>Milk Caps</div>
+            <div style={{display:"flex",justifyContent:"center",gap:12,marginTop:4}}><span style={{fontSize:11,color:"#fbbf24",fontWeight:700}}>⭐ {ts}</span><span style={{fontSize:11,color:"#706858"}}>·</span><span style={{fontSize:11,color:"#a09888"}}>{col.length} caps</span></div>
+            <button onClick={()=>sSS(true)} style={{marginTop:8,padding:"6px 16px",borderRadius:10,fontSize:11,fontWeight:700,background:"rgba(245,230,200,.06)",border:"1px solid rgba(245,230,200,.1)",color:"#a09888",cursor:"pointer"}}>🔨 {cSlam.name}</button></div>
+          {ERAS.map((er,eri)=>{const locked=ts<er.gate;return(
+            <div key={eri} style={{marginBottom:10,background:locked?"rgba(0,0,0,.2)":"rgba(245,230,200,.03)",borderRadius:14,border:"1px solid "+(locked?"rgba(245,230,200,.03)":"rgba(245,230,200,.06)"),padding:10,opacity:locked?0.4:1}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:22}}>{er.emoji}</span><div><div style={{fontSize:14,fontWeight:900,color:er.color}}>{er.name}</div></div></div>
+                {locked&&<div style={{fontSize:10,color:"#706858",fontWeight:700}}>🔒 {er.gate} ⭐</div>}
+              </div>
+              {!locked&&er.levels.map((l,lii)=>{const k=eri+"-"+lii;const ul=isUL(eri,lii);const st=stars[k]||0;
+                return(<button key={lii} onClick={()=>{if(ul){sEI(eri);sLI(lii);sM("preview");}}} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",marginBottom:2,borderRadius:10,border:"none",cursor:ul?"pointer":"default",background:l.boss&&ul?er.color+"12":"rgba(245,230,200,.03)",opacity:ul?1:.3,textAlign:"left"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:26,height:26,borderRadius:8,background:l.boss?er.color+"25":l.mini?er.color+"10":"rgba(245,230,200,.06)",border:"1px solid "+(l.boss?er.color+"50":l.mini?er.color+"30":"rgba(245,230,200,.08)"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:l.boss||l.mini?12:10,fontWeight:900,color:l.boss?er.color:l.mini?er.color:"#a09888"}}>{l.boss?er.boss.emoji:l.mini?l.mini.split(" ")[1]:(lii+1)}</div>
+                    <div><div style={{fontSize:11,fontWeight:700,color:ul?"#f5e6c8":"#504840"}}>{l.name}</div><div style={{fontSize:8,color:"#706858"}}>{l.n} caps · {l.slams} slams · flip {l.target}</div></div>
+                  </div>
+                  <div style={{fontSize:11,color:st>0?"#fbbf24":"#3a3530",letterSpacing:2}}>{SS(st)}</div>
+                </button>);})}
+            </div>);})}
+        </div>)}
+
+      {mode==="map"&&showShop&&(
+        <div style={{flex:1,width:"100%",maxWidth:400,overflowY:"auto",padding:"14px 12px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><button onClick={()=>sSS(false)} style={{fontSize:12,color:"#706858",background:"none",border:"1px solid #3a3530",borderRadius:8,padding:"4px 10px",cursor:"pointer"}}>← Back</button><span style={{fontSize:12,color:"#fbbf24",fontWeight:700}}>⭐ {ts}</span></div>
+          <div style={{fontSize:18,fontWeight:900,color:"#f5e6c8",textAlign:"center"}}>Slammers</div>
+          <div style={{fontSize:11,color:"#706858",textAlign:"center",marginBottom:10}}>Earn stars to unlock</div>
+          {SLAMS.map(s=>{const ow=owned.includes(s.id);const ac=cSlam.id===s.id;
+            return(<div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:8,marginBottom:4,borderRadius:12,background:ac?"rgba(251,191,36,.08)":"rgba(245,230,200,.03)",border:ac?"1.5px solid #fbbf2440":"1px solid rgba(245,230,200,.06)"}}>
+              <div style={{fontSize:24,width:36,textAlign:"center"}}>{s.name.match(/[^\w\s]/)?s.name.match(/[^\w\s]+/)[0]:"🔘"}</div>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:800,color:"#f5e6c8"}}>{s.name}</div><div style={{fontSize:9,color:"#706858"}}>{s.desc}</div></div>
+              {ow?(ac?<div style={{fontSize:9,fontWeight:800,color:"#fbbf24",padding:"3px 8px",borderRadius:8,background:"#fbbf2415"}}>EQUIPPED</div>
+                :<button onClick={()=>sCS(s)} style={{fontSize:9,fontWeight:700,color:"#a09888",padding:"3px 8px",borderRadius:8,background:"rgba(245,230,200,.06)",border:"1px solid rgba(245,230,200,.1)",cursor:"pointer"}}>Equip</button>)
+              :(<button onClick={()=>buyS(s)} disabled={ts<s.cost} style={{fontSize:9,fontWeight:700,color:ts>=s.cost?"#4ade80":"#504840",padding:"3px 8px",borderRadius:8,background:ts>=s.cost?"rgba(74,222,128,.08)":"rgba(0,0,0,.2)",border:ts>=s.cost?"1px solid #4ade8030":"1px solid #3a3530",cursor:ts>=s.cost?"pointer":"not-allowed"}}>⭐{s.cost}</button>)}
+            </div>);})}
+        </div>)}
+
+      {mode==="preview"&&lv&&(
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:6,animation:"fadeIn .3s"}}>
+          {(lv.boss||lv.mini)&&<div style={{fontSize:50,animation:"bossSmirk 1s infinite"}}>{lv.boss?boss.emoji:lv.mini.split(" ")[1]}</div>}
+          {(lv.boss||lv.mini)&&<div style={{fontSize:11,color:era.color,fontWeight:700}}>{lv.boss?boss.name:lv.mini.split(" ")[0]}</div>}
+          {lv.boss&&<div style={{fontSize:14,fontWeight:800,color:"#f5e6c8"}}>"{boss.taunt}"</div>}
+          <div style={{fontSize:20,fontWeight:900,color:era.color,marginTop:4}}>{lv.name}</div>
+          <div style={{display:"flex",gap:20,marginTop:8}}>
+            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:900,color:"#f5e6c8"}}>{lv.n}</div><div style={{fontSize:8,color:"#706858"}}>CAPS</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:900,color:"#f5e6c8"}}>{lv.slams}</div><div style={{fontSize:8,color:"#706858"}}>SLAMS</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:22,fontWeight:900,color:"#4ade80"}}>{lv.target}</div><div style={{fontSize:8,color:"#706858"}}>TO PASS</div></div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:12}}>
+            <button onClick={()=>sM("map")} style={{padding:"10px 20px",borderRadius:12,fontWeight:700,fontSize:13,background:"none",color:"#706858",border:"2px solid #3a3530",cursor:"pointer"}}>Back</button>
+            <button onClick={startLv} style={{padding:"10px 36px",borderRadius:12,fontWeight:800,fontSize:14,background:"linear-gradient(135deg,#5a3d1a,#6b4c2a)",color:"#f5e6c8",border:"2px solid "+era.color,cursor:"pointer"}}>{lv.boss?"⚔️ Challenge":"▶ Start"}</button>
+          </div>
+        </div>)}
+
+      {mode==="result"&&lv&&(
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:6,animation:"fadeIn .4s"}}>
+          {(isBoss||lv.mini)&&<div style={{fontSize:44,marginBottom:2}}>{isBoss?boss.emoji:lv.mini?.split(" ")[1]}</div>}
+          {isBoss&&<div style={{fontSize:13,fontWeight:800,color:fl>=lv.target?"#4ade80":"#ef4444"}}>"{fl>=lv.target?boss.win:boss.lose}"</div>}
+          <div style={{fontSize:48,fontWeight:900,color:fl>=lv.target?"#4ade80":"#ef4444",marginTop:4}}>{fl}<span style={{fontSize:18,color:"#706858"}}>/{lv.n}</span></div>
+          <div style={{fontSize:11,color:"#706858"}}>needed {lv.target}</div>
+          {fl>=lv.target?(<div style={{marginTop:4,textAlign:"center"}}><div style={{fontSize:28,letterSpacing:4,animation:"popIn .4s"}}>{SS(fl>=lv.stars[2]?3:fl>=lv.stars[1]?2:1)}</div><div style={{fontSize:14,fontWeight:800,color:"#4ade80",marginTop:4}}>{isBoss?"🏆 Boss Defeated!":"Level Complete!"}</div></div>)
+          :(<div style={{fontSize:14,fontWeight:800,color:"#ef4444",marginTop:6}}>Not enough flips!</div>)}
+          <div style={{display:"flex",gap:8,marginTop:14}}>
+            {/* RETRY is primary on fail, secondary on win */}
+            {fl<lv.target?(<>
+              <button onClick={startLv} style={{padding:"12px 36px",borderRadius:14,fontWeight:800,fontSize:15,background:"linear-gradient(135deg,#c41e3a,#e02050)",color:"#fff",border:"2px solid #ff4060",cursor:"pointer",boxShadow:"0 4px 20px rgba(196,30,58,.3)"}}>🔄 Retry!</button>
+              <button onClick={finLv} style={{padding:"10px 16px",borderRadius:12,fontWeight:600,fontSize:11,background:"none",color:"#706858",border:"1px solid #3a3530",cursor:"pointer"}}>Menu</button>
+            </>):(<>
+              <button onClick={startLv} style={{padding:"8px 16px",borderRadius:10,fontWeight:700,fontSize:12,background:"none",color:"#a09888",border:"2px solid #3a3530",cursor:"pointer"}}>Replay</button>
+              <button onClick={finLv} style={{padding:"12px 32px",borderRadius:14,fontWeight:800,fontSize:15,background:"linear-gradient(135deg,#5a3d1a,#6b4c2a)",color:"#f5e6c8",border:"2px solid "+era.color,cursor:"pointer"}}>Continue →</button>
+            </>)}
+          </div>
+        </div>)}
+
+      {mode==="play"&&(<>
+        {isBoss&&<div style={{width:"100%",maxWidth:dims.w,textAlign:"center",padding:"3px 0",zIndex:10}}>
+          <div style={{fontSize:34,display:"inline-block",animation:bossR==="flinch"?"bossFlinch .3s":bossR==="smirk"?"bossSmirk .5s":bossR==="worried"?"bossFlinch .4s":bossR==="shocked"?"bossShocked .5s":"none"}}>{boss.emoji}</div>
+          <div style={{fontSize:9,fontWeight:800,color:era.color}}>{boss.name}</div>
+        </div>}
+        {lv.mini&&<div style={{width:"100%",maxWidth:dims.w,textAlign:"center",padding:"3px 0",zIndex:10}}>
+          <div style={{fontSize:28,display:"inline-block",animation:bossR==="flinch"?"bossFlinch .3s":bossR==="smirk"?"bossSmirk .5s":"none"}}>{lv.mini.split(" ")[1]}</div>
+          <div style={{fontSize:9,fontWeight:700,color:era.color}}>{lv.mini.split(" ")[0]}</div>
+        </div>}
+        <div style={{width:"100%",maxWidth:dims.w+8,padding:"4px 10px",background:"rgba(0,0,0,.4)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"space-between",zIndex:10}}>
+          <button onClick={()=>sM("map")} style={{fontSize:10,color:"#aaa",background:"none",border:"1px solid #555",borderRadius:6,padding:"3px 8px",cursor:"pointer"}}>✕</button>
+          <span style={{fontSize:11,fontWeight:800,color:era.color}}>{lv.name}</span>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:11,fontWeight:800,color:fl>=lv.target?"#4ade80":"#fff"}}>{fl}/{lv.target}</span>
+            <div style={{display:"flex",gap:2}}>{Array.from({length:lv.slams}).map((_,i)=>(<div key={i} style={{width:14,height:14,borderRadius:"50%",background:i<sLeft?"radial-gradient(circle at 40% 35%,#e8e0d0,#a09888)":"rgba(50,50,50,.5)",border:i<sLeft?"2px solid #8a8070":"2px solid #404040"}}/>))}</div>
+          </div>
+        </div>
+        {renderTable(ei)}
+        <div style={{padding:"2px 12px 8px",fontSize:11,fontWeight:800,color:"rgba(255,255,255,.4)",textAlign:"center",zIndex:10}}>{sLeft>0?sLeft+" slam"+(sLeft!==1?"s":""):"Done!"}</div>
+      </>)}
+    </div>
+  );
+
+  function renderTable(eri){const tb=tbBg(eri);const Deco=tbDeco(eri);
+    return(
+      <div style={{flex:mode==="tutorial"?"none":1,display:"flex",alignItems:"center",justifyContent:"center",padding:"4px 0",zIndex:5,position:"relative"}}>
+        {/* Bloom bar */}
+        {mode==="play"&&lv&&<div style={{position:"absolute",left:4,top:"10%",bottom:"10%",width:8,borderRadius:4,background:"rgba(0,0,0,.3)",zIndex:20,overflow:"hidden"}}>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:(bloom*100)+"%",background:bloom>=1?"linear-gradient(0deg,#fbbf24,#ff6b6b)":bloom>.6?"linear-gradient(0deg,#4ade80,#fbbf24)":"linear-gradient(0deg,#60a5fa,#4ade80)",borderRadius:4,transition:"height .4s ease-out",boxShadow:bloom>=.8?"0 0 12px "+( bloom>=1?"#fbbf24":"#4ade80"):"none"}}/>
+          {bloom>=1&&<div style={{position:"absolute",top:-8,left:-4,fontSize:14}}>🌟</div>}
+        </div>}
+        <div ref={tRef} style={{width:dims.w,height:dims.h,position:"relative",background:tb.bg,borderRadius:16,overflow:"hidden",boxShadow:"0 10px 50px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08),inset 0 -4px 20px rgba(0,0,0,.4)",border:"3px solid "+tb.bd,animation:shk?"shake .2s ease-out":"none",touchAction:"none",WebkitTouchCallout:"none"}}>
+          <div style={{position:"absolute",inset:0,opacity:.08,pointerEvents:"none",backgroundImage:"repeating-linear-gradient(87deg,transparent,transparent 28px,rgba(0,0,0,.15) 28px,rgba(0,0,0,.15) 29px)"}}/>
+          {Deco&&<Deco/>}
+          {impact&&<div style={{position:"absolute",left:impact.x-50,top:impact.y-50,width:100,height:100,borderRadius:"50%",border:"3px solid rgba(255,230,180,.5)",animation:"impactRing .5s ease-out forwards",pointerEvents:"none",zIndex:55}}/>}
+          {drag&&<div style={{position:"absolute",left:sp.x-(SR+20)*cSlam.rad,top:sp.y-(SR+20)*cSlam.rad,width:(SR+20)*2*cSlam.rad,height:(SR+20)*2*cSlam.rad,borderRadius:"50%",border:"2px dashed rgba(255,255,255,.12)",background:"radial-gradient(circle,rgba(255,255,255,.05),transparent 70%)",pointerEvents:"none",zIndex:40}}/>}
+          {caps.map(cap=>{if(cap.done)return null;const sz=CR*2+4;const k=cap.id+"_"+(cap.fu?"f":"b");const src=capImgs.current[k];
+            return(<div key={cap.id} style={{position:"absolute",left:cap.x-sz/2,top:cap.y-sz/2,width:sz,height:sz,transform:"rotate("+Math.round(cap.rot)+"deg)",zIndex:cap.fu?10:5,filter:cap.fu&&cap.design.rarity.n!=="Common"?"drop-shadow(0 0 10px "+cap.design.rarity.c+"50)":"none",pointerEvents:"none"}}>
+              {src&&<img src={src} width={sz} height={sz} style={{display:"block"}} alt=""/>}
+              {cap.fu&&cap.set&&<div style={{position:"absolute",bottom:-16,left:"50%",transform:"translateX(-50%)",fontSize:7,fontWeight:800,color:cap.design.rarity.c,textShadow:"0 1px 3px rgba(0,0,0,.8)",whiteSpace:"nowrap",background:"rgba(0,0,0,.75)",padding:"1px 5px",borderRadius:6,animation:"fadeIn .3s"}}>{cap.design.rarity.n}{cap.design.sym===9?" 🎉":""}</div>}
+            </div>);})}
+          {parts.map(p=><div key={p.id} style={{position:"absolute",left:p.x-p.size/2,top:p.y-p.size/2,width:p.size,height:p.size,borderRadius:"50%",background:p.color,opacity:p.life,pointerEvents:"none",zIndex:70,boxShadow:"0 0 6px "+p.color}}/>)}
+          {floats.map(f=><div key={f.id} style={{position:"absolute",left:f.x,top:f.y,transform:"translateX(-50%)",fontSize:f.big?20:14,fontWeight:900,color:f.color,textShadow:"0 2px 12px rgba(0,0,0,.9),0 0 20px "+f.color+"50",animation:(f.big?"bigFloat":"scoreFloat")+" 1.2s ease-out forwards",pointerEvents:"none",zIndex:80,letterSpacing:f.big?2:0}}>{f.text}</div>)}
+          <div style={{position:"absolute",left:sp.x-SR,top:sp.y-SR,width:SR*2,height:SR*2,borderRadius:"50%",background:cSlam.id==="softball"?"radial-gradient(circle at 35% 30%,#f5f5dc,#d8d0a0 50%,#b0a870)":cSlam.id==="football"?"radial-gradient(circle at 35% 30%,#a0652a,#6b3410 50%,#4a2008)":cSlam.id==="diamond"?"conic-gradient(from 0deg,#e8f4ff,#a0d0ff 25%,#d0e8ff 50%,#80c0ff 75%)":cSlam.id==="ruby"?"conic-gradient(from 0deg,#ff2040,#ff6080 25%,#c01030 50%,#ff4060 75%)":cSlam.id==="heavy"?"conic-gradient(from 0deg,#606870,#a0b0c0 25%,#405060 50%,#8098b0 75%)":cSlam.id==="precision"?"conic-gradient(from 0deg,#c0a050,#e8d080 25%,#a08030 50%,#d0b860 75%)":cSlam.id==="skull"?"conic-gradient(from 0deg,#333,#555 25%,#222 50%,#444 75%)":"conic-gradient(from 0deg,#c8c0b0,#e0d8c8 25%,#a09080 50%,#d0c8b8 75%)",border:"3px solid "+(cSlam.id==="football"?"#2a1000":cSlam.id==="ruby"?"#800018":cSlam.id==="skull"?"#111":"#605848"),boxShadow:drag?"0 14px 40px rgba(0,0,0,.7)":slamA?"0 2px 6px rgba(0,0,0,.4)":"0 6px 24px rgba(0,0,0,.5)",transform:drag?"scale(1.2)":slamA?"scale(.85)":"scale(1)",transition:slamA?"transform .08s":drag?"none":"transform .2s",zIndex:50,pointerEvents:"none",opacity:sLeft<=0?0.2:1,animation:sLeft>0&&!drag&&!slamA?"slamBob 2.5s infinite":"none",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {cSlam.id==="skull"&&<span style={{fontSize:22,filter:"drop-shadow(0 0 4px rgba(255,0,0,.3))"}}>💀</span>}
+            {cSlam.id==="classic"&&<><div style={{position:"absolute",inset:5,borderRadius:"50%",border:"2px solid rgba(150,140,120,.5)"}}/><div style={{position:"absolute",inset:12,borderRadius:"50%",border:"1.5px solid rgba(160,150,130,.4)"}}/></>}
+            {cSlam.id==="softball"&&<svg style={{position:"absolute",inset:0,width:"100%",height:"100%"}} viewBox="0 0 60 60"><path d="M18,8 Q30,30 18,52" fill="none" stroke="#c41e3a" strokeWidth="2" opacity=".5"/><path d="M42,8 Q30,30 42,52" fill="none" stroke="#c41e3a" strokeWidth="2" opacity=".5"/></svg>}
+            {cSlam.id==="football"&&<svg style={{position:"absolute",inset:0,width:"100%",height:"100%"}} viewBox="0 0 60 60"><line x1="22" y1="24" x2="38" y2="24" stroke="#fff" strokeWidth="1.5" opacity=".4"/><line x1="22" y1="30" x2="38" y2="30" stroke="#fff" strokeWidth="1.5" opacity=".4"/><line x1="22" y1="36" x2="38" y2="36" stroke="#fff" strokeWidth="1.5" opacity=".4"/><line x1="30" y1="20" x2="30" y2="40" stroke="#fff" strokeWidth="1.5" opacity=".4"/></svg>}
+            {cSlam.id==="diamond"&&<div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%)"}}/>}
+            <div style={{position:"absolute",top:2,left:6,width:"55%",height:"30%",borderRadius:"50%",background:"linear-gradient(180deg,rgba(255,255,255,.22),transparent)"}}/>
+          </div>
+          {sLeft>0&&caps.every(c=>c.set)&&!drag&&<div style={{position:"absolute",bottom:8,left:0,right:0,textAlign:"center",pointerEvents:"none",animation:"fadeIn .5s"}}><div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.3)"}}>{mode==="tutorial"?"👆 Tap or drag":"Tap to slam"}</div></div>}
+        </div>
+      </div>);
+  }
+}
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  React.createElement(React.StrictMode, null, React.createElement(App))
+);
+</script>
+</body>
+</html>
